@@ -1,2 +1,2 @@
-# birdbot
-Discord bot source code
+# Birdbot
+Source code for a bird-themed discord bot
