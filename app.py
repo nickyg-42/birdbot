@@ -188,12 +188,21 @@ async def imagine(ctx: discord.ApplicationContext, description: str):
     except RateLimitExceeded as e:
         await ctx.respond("Rate limit exceeded for image generation. Try again in a minute.", ephemeral=True)
         print(e)
+        return
+    except Exception as e:
+        await ctx.respond("An error occurred while generating the image. Please try again later.", ephemeral=True)
+        print(f"Error during image generation: {e}")
+        return
 
     if image_data:
-        file = discord.File(image_data, filename="generated_image.png")
-        await ctx.respond(file=file)
+        try:
+            file = discord.File(image_data, filename="generated_image.png")
+            await ctx.respond(file=file)
+        except Exception as e:
+            print(f"Error responding with image: {e}")
+            await ctx.respond("Sorry, I couldn't send the generated image.", ephemeral=True)
     else:
-        await ctx.respond("Sorry, I couldn't generate an image.", ephemeral=True)
+        await ctx.respond("Sorry, I couldn't generate an image. Please try again later.", ephemeral=True)
 
 
 # Event: Respond to a mention
