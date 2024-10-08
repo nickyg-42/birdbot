@@ -176,7 +176,7 @@ async def on_application_command(ctx):
 
     try:
         point = Point("command_usage") \
-            .tag("user", user) \
+            .field("user", user) \
             .field("command", f"{command}:{args}") \
             .time(timestamp)
 
