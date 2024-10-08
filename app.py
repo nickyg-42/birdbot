@@ -18,6 +18,7 @@ bot = commands.Bot(command_prefix='!', intents=intents)
 TOKEN = os.getenv('DISCORD_BOT_TOKEN')
 ACCOUNT_ID = os.getenv('ACCOUNT_ID')
 AUTH_TOKEN = os.getenv('AUTH_TOKEN')
+NINJA_API_KEY = os.getenv('NINJA_API_KEY')
 
 # Variables to track requests and rate limits
 text_gen_requests = 0
@@ -156,6 +157,8 @@ async def on_command_error(ctx, error):
         await ctx.send("Error: Rate limit exceeded. Please wait a minute.")
     if isinstance(error, commands.MissingRequiredArgument):
         await ctx.send("Error: You need to provide an argument. Usage: `!<command> <argument>`", ephemeral=True)
+    if isinstance(error, commands.CommandOnCooldown):
+        await ctx.send(f"You're on cooldown. Try again in {round(error.retry_after)} seconds.", ephemeral=True)
     else:
         print(f'Generic error caught: {error}')
         await ctx.send(f"Unkown error.")
@@ -163,6 +166,7 @@ async def on_command_error(ctx, error):
 
 # /rebirth
 @bot.slash_command(name="rebirth", description="Give me a theme and I'll set your nickname to something zany")
+@commands.cooldown(1, 5, commands.BucketType.user)
 async def rebirth(ctx: discord.ApplicationContext, theme: str):
     # Check if the user is the server owner
     if ctx.author == ctx.guild.owner:
@@ -184,7 +188,7 @@ async def rebirth(ctx: discord.ApplicationContext, theme: str):
 
         # Change the nickname of the user who invoked the command
         await ctx.author.edit(nick=response)
-        await ctx.respond(f'{ctx.author.name} has been reborn as: {response}', ephemeral=True)
+        await ctx.respond(f'{ctx.author.name} has been reborn as: {response}')
     except discord.Forbidden:
         await ctx.respond('I do not have permission to change nicknames. Please check my role permissions.', ephemeral=True)
     except discord.HTTPException as e:
@@ -200,8 +204,17 @@ async def rebirth(ctx: discord.ApplicationContext, theme: str):
         print(e)
 
 
+@rebirth.error
+async def imagine_error(ctx, error):
+    if isinstance(error, commands.CommandOnCooldown):
+        await ctx.respond(f"This server is on cooldown. Try again in {round(error.retry_after)} seconds.", ephemeral=True)
+    else:
+        await ctx.respond(f"Unkown error, spam @birdman until it is fixed", ephemeral=True)
+
+
 # /imagine
 @bot.slash_command(name="imagine", description="Paint a picture for me with your words and I'll paint one with my feathers")
+@commands.cooldown(1, 5, commands.BucketType.user)
 async def imagine(ctx: discord.ApplicationContext, description: str):
     await ctx.defer()
 
@@ -227,8 +240,95 @@ async def imagine(ctx: discord.ApplicationContext, description: str):
         await ctx.respond("Sorry, I couldn't generate an image. Please try again later.", ephemeral=True)
 
 
+@imagine.error
+async def imagine_error(ctx, error):
+    if isinstance(error, commands.CommandOnCooldown):
+        await ctx.respond(f"This server is on cooldown. Try again in {round(error.retry_after)} seconds.", ephemeral=True)
+    else:
+        await ctx.respond(f"Unkown error, spam @birdman until it is fixed", ephemeral=True)
+
+
+# /joke
+@bot.slash_command(name="joke", description="I'll tell you a joke")
+@commands.cooldown(1, 5, commands.BucketType.user)
+async def joke(ctx: discord.ApplicationContext):
+    await ctx.defer()
+
+    api_url = 'https://api.api-ninjas.com/v1/dadjokes'
+    response = requests.get(api_url, headers={'X-Api-Key': NINJA_API_KEY})
+    if response.status_code == requests.codes.ok:
+        result = response.json()
+        await ctx.respond(result[0]['joke'])
+    else:
+        print("Error:", response.status_code, response.text)
+        await ctx.respond('There was an error finding a good joke, you must not be funny.')
+
+
+@joke.error
+async def imagine_error(ctx, error):
+    if isinstance(error, commands.CommandOnCooldown):
+        await ctx.respond(f"This server is on cooldown. Try again in {round(error.retry_after)} seconds.", ephemeral=True)
+    else:
+        await ctx.respond(f"Unkown error, spam @birdman until it is fixed", ephemeral=True)
+
+
+# /fact
+@bot.slash_command(name="fact", description="I'll tell you a fact")
+@commands.cooldown(1, 5, commands.BucketType.user)
+async def fact(ctx: discord.ApplicationContext):
+    await ctx.defer()
+
+    api_url = 'https://api.api-ninjas.com/v1/facts'
+    response = requests.get(api_url, headers={'X-Api-Key': NINJA_API_KEY})
+    if response.status_code == requests.codes.ok:
+        result = response.json()
+        await ctx.respond(result[0]['fact'])
+    else:
+        print("Error:", response.status_code, response.text)
+        await ctx.respond('There was an error finding a fact, nothing is real.')
+
+
+@fact.error
+async def imagine_error(ctx, error):
+    if isinstance(error, commands.CommandOnCooldown):
+        await ctx.respond(f"This server is on cooldown. Try again in {round(error.retry_after)} seconds.", ephemeral=True)
+    else:
+        await ctx.respond(f"Unkown error, spam @birdman until it is fixed", ephemeral=True)
+
+
+# /quote
+@bot.slash_command(name="quote", description="I'll tell you a quote")
+@commands.cooldown(1, 5, commands.BucketType.user)
+async def quote(ctx: discord.ApplicationContext):
+    await ctx.defer()
+
+    api_url = 'https://api.api-ninjas.com/v1/quotes'
+    response = requests.get(api_url, headers={'X-Api-Key': NINJA_API_KEY})
+    if response.status_code == requests.codes.ok:
+        data = response.json()
+
+        quote = data[0]['quote']
+        author = data[0]['author']
+        
+        message = f"*{quote}* — {author}"
+        
+        await ctx.respond(message)
+    else:
+        print("Error:", response.status_code, response.text)
+        await ctx.respond('There was an error finding a quote, nobody has ever spoken.')
+
+
+@quote.error
+async def imagine_error(ctx, error):
+    if isinstance(error, commands.CommandOnCooldown):
+        await ctx.respond(f"This server is on cooldown. Try again in {round(error.retry_after)} seconds.", ephemeral=True)
+    else:
+        await ctx.respond(f"Unkown error, spam @birdman until it is fixed", ephemeral=True)
+
+
 # Event: Respond to a mention
 @bot.event
+@commands.cooldown(1, 5, commands.BucketType.user)
 async def on_message(message):
     if message.author == bot.user:
         return
@@ -251,5 +351,6 @@ async def on_message(message):
             await message.reply(response)
 
     await bot.process_commands(message)
+
 
 bot.run(TOKEN)
