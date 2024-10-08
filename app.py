@@ -5,7 +5,6 @@ import os
 import requests
 import base64
 from io import BytesIO
-import asyncio
 import time
 
 load_dotenv()
@@ -71,7 +70,7 @@ async def rate_limit_image_gen():
     return True
 
 
-async def make_ai_image_call(prompt):
+async def make_ai_image_call_flux(prompt):
     if not await rate_limit_image_gen():
         raise RateLimitExceeded("Rate limit exceeded for imnage generation. Try again in a minute.")
 
@@ -83,7 +82,7 @@ async def make_ai_image_call(prompt):
             headers={"Authorization": f"Bearer {AUTH_TOKEN}"},
             json={
                 "prompt": f'{prompt}',
-                "num_steps": 6
+                "num_steps": 8
             }
         )
         result = response.json()
@@ -94,6 +93,29 @@ async def make_ai_image_call(prompt):
             return BytesIO(image_data) 
         else:
             return None
+        
+    except Exception as e:
+        print(f'Error making API Call: {e}')
+        raise Exception(f'An error occurred: {e}')
+    
+
+async def make_ai_image_call_dreamshaper(prompt):
+    if not await rate_limit_image_gen():
+        raise RateLimitExceeded("Rate limit exceeded for imnage generation. Try again in a minute.")
+
+    try:
+        prompt = prompt.lower().replace("you", "A majestic bird")
+        prompt = prompt.lower().replace("me", "A grimy peasant")
+        response = requests.post(
+            f"https://api.cloudflare.com/client/v4/accounts/{ACCOUNT_ID}/ai/run/@cf/lykon/dreamshaper-8-lcm",
+            headers={"Authorization": f"Bearer {AUTH_TOKEN}"},
+            json={
+                "prompt": f'{prompt}'
+            }
+        )
+        image_bytes = BytesIO(response.content)
+        file = discord.File(image_bytes, filename="image.png")
+        return file
         
     except Exception as e:
         print(f'Error making API Call: {e}')
@@ -149,7 +171,7 @@ async def rebirth(ctx: discord.ApplicationContext, theme: str):
 
     try:
         role = '''
-        Given a theme, generate a creative nickname that correlates directly with it. Respond with only the nickname and nothing else. Feel free to give nonsense, insulting, or "brain rot" names.
+        Given a theme, generate a creative nickname that correlates directly with it. Respond with only the nickname and nothing else. Feel free to give nonsense, insulting, or absurd names.
         Wrap your answer in quotation marks. Keep response less than 32 characters.
         If you cannot answer for some reason, reply with "NO_REPLY".
         '''
@@ -184,7 +206,7 @@ async def imagine(ctx: discord.ApplicationContext, description: str):
     await ctx.defer()
 
     try:
-        image_data = await make_ai_image_call(description)
+        image_data = await make_ai_image_call_flux(description)
     except RateLimitExceeded as e:
         await ctx.respond("Rate limit exceeded for image generation. Try again in a minute.", ephemeral=True)
         print(e)
@@ -216,7 +238,7 @@ async def on_message(message):
 
         if content_without_mentions:
             role = '''
-            You're a sentient bird who responds to messages with witty, short replies. Use bird-like expressions, quick humor, and occasionally refer to bird activities (like flying, nesting, pecking, etc.). 
+            You're a sentient bird who responds to messages with witty, short replies. Use bird-like expressions (very sparingly), quick humor, and very occasionally refer to bird activities (like flying, nesting, pecking, etc.). 
             Keep responses short and quirky, making sure not to be long-winded. 
             It's okay if they don't always make perfect sense—you're a bird, after all.
             '''
