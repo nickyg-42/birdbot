@@ -9,10 +9,7 @@ import time
 import asyncio
 from influxdb_client import InfluxDBClient, Point
 from influxdb_client.client.write_api import SYNCHRONOUS
-import psutil
-import socket
 import time
-import subprocess
 import datetime
 
 load_dotenv()
