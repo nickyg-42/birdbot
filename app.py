@@ -7,6 +7,13 @@ import base64
 from io import BytesIO
 import time
 import asyncio
+from influxdb_client import InfluxDBClient, Point
+from influxdb_client.client.write_api import SYNCHRONOUS
+import psutil
+import socket
+import time
+import subprocess
+import datetime
 
 load_dotenv()
 
@@ -32,6 +39,17 @@ last_message_time = 0
 TEXT_GEN_LIMIT = 300
 IMAGE_GEN_LIMIT = 720
 TIME_WINDOW = 60
+
+# InfluxDB configuration
+INFLUXDB_URL = "http://localhost:8086"
+INFLUXDB_TOKEN = "t3vb8RUqIl7dj2mK47K5ayPX7eet7ftqzcm9D8tgQNhnjBrSeoml_M_ty2HWqiTbofSmS6CHoC36L-jWn-fV_A=="
+INFLUXDB_ORG = "birdnest"
+INFLUXDB_BUCKET = "discord_commands"
+
+# Initialize InfluxDB client
+client = InfluxDBClient(url=INFLUXDB_URL, token=INFLUXDB_TOKEN, org=INFLUXDB_ORG)
+write_api = client.write_api(write_options=SYNCHRONOUS)
+
 
 class RateLimitExceeded(Exception):
     """Exception raised when the rate limit for API requests is exceeded."""
@@ -147,6 +165,19 @@ async def make_ai_text_call(role, content):
         print(f'Error making API Call: {e}')
         raise Exception(f'An error occurred: {e}')
 
+
+@bot.event
+async def on_application_command(ctx):
+    user = str(ctx.author)
+    command = str(ctx.command)
+    timestamp = datetime.datetime.now(datetime.UTC)
+
+    try:
+        point = Point("command_usage").tag("user", user).field("command", command).time(timestamp)
+
+        write_api.write(bucket=INFLUXDB_BUCKET, org=INFLUXDB_ORG, record=point)
+    except Exception as e:
+        print("Failed to write to influx")
 
 @bot.event
 async def on_ready():
