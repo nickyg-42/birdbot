@@ -40,7 +40,7 @@ TIME_WINDOW = 60
 INFLUXDB_URL = "http://localhost:8086"
 INFLUXDB_TOKEN = "t3vb8RUqIl7dj2mK47K5ayPX7eet7ftqzcm9D8tgQNhnjBrSeoml_M_ty2HWqiTbofSmS6CHoC36L-jWn-fV_A=="
 INFLUXDB_ORG = "birdnest"
-INFLUXDB_BUCKET = "discord_commands"
+INFLUXDB_BUCKET = "discord"
 
 # Initialize InfluxDB client
 client = InfluxDBClient(url=INFLUXDB_URL, token=INFLUXDB_TOKEN, org=INFLUXDB_ORG)
@@ -173,7 +173,7 @@ async def on_application_command(ctx):
         args = ctx.selected_options[0]['value']
 
     try:
-        point = Point("command_usage") \
+        point = Point("discord_commands") \
             .field("user", user) \
             .field("command", f"{command}:{args}") \
 
