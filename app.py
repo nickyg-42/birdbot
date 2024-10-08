@@ -173,8 +173,7 @@ async def on_application_command(ctx):
 
     if ctx.selected_options is not None:
         args = ctx.selected_options[0]['value']
-
-    print(args)
+        
     try:
         point = Point("command_usage") \
             .tag("user", user) \
