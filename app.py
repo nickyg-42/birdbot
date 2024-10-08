@@ -10,7 +10,6 @@ import asyncio
 from influxdb_client import InfluxDBClient, Point
 from influxdb_client.client.write_api import SYNCHRONOUS
 import time
-import datetime
 
 load_dotenv()
 
@@ -167,7 +166,6 @@ async def make_ai_text_call(role, content):
 async def on_application_command(ctx):
     user = str(ctx.author)
     command = str(ctx.command)
-    timestamp = datetime.datetime.now(datetime.UTC)
 
     args = 'n/a'
 
@@ -178,7 +176,6 @@ async def on_application_command(ctx):
         point = Point("command_usage") \
             .field("user", user) \
             .field("command", f"{command}:{args}") \
-            .time(timestamp)
 
         write_api.write(bucket=INFLUXDB_BUCKET, org=INFLUXDB_ORG, record=point)
     except Exception as e:
