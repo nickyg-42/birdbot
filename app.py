@@ -173,12 +173,11 @@ async def on_application_command(ctx):
 
     if ctx.selected_options is not None:
         args = ctx.selected_options[0]['value']
-        
+
     try:
         point = Point("command_usage") \
             .tag("user", user) \
-            .field("command", command) \
-            .field("arguments", args) \
+            .field("command", f"{command}:{args}") \
             .time(timestamp)
 
         write_api.write(bucket=INFLUXDB_BUCKET, org=INFLUXDB_ORG, record=point)
