@@ -170,6 +170,7 @@ async def on_application_command(ctx):
     timestamp = datetime.datetime.now(datetime.UTC)
 
     arguments = ctx.options
+    print(arguments)
     args_log = ', '.join([f'"{arg}"' for arg in arguments.values()])
 
     try:
