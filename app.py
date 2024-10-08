@@ -6,6 +6,7 @@ import requests
 import base64
 from io import BytesIO
 import time
+import asyncio
 
 load_dotenv()
 
@@ -25,6 +26,7 @@ text_gen_requests = 0
 image_gen_requests = 0
 last_text_gen_reset = time.time()
 last_image_gen_reset = time.time()
+last_message_time = 0
 
 # Rate limit parameters
 TEXT_GEN_LIMIT = 300
@@ -328,10 +330,22 @@ async def imagine_error(ctx, error):
 
 # Event: Respond to a mention
 @bot.event
-@commands.cooldown(1, 5, commands.BucketType.user)
 async def on_message(message):
     if message.author == bot.user:
         return
+    
+    global last_message_time
+    cooldown_period = 3  # 3 seconds global cooldown
+    current_time = asyncio.get_event_loop().time()
+    time_since_last_message = current_time - last_message_time
+
+    if time_since_last_message < cooldown_period:
+        remaining_time = round(cooldown_period - time_since_last_message)
+        await message.reply(f"BirdBot can only reply to 1 message at a time, please try again.")
+        return
+
+    # Update the last message time
+    last_message_time = current_time
     
     if bot.user in message.mentions:
         content_without_mentions = message.content.replace(f'<@{bot.user.id}>', '').strip()
