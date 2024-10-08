@@ -169,12 +169,20 @@ async def on_application_command(ctx):
     command = str(ctx.command)
     timestamp = datetime.datetime.now(datetime.UTC)
 
+    arguments = ctx.options
+    args_log = ', '.join([f'"{arg}"' for arg in arguments.values()])
+
     try:
-        point = Point("command_usage").tag("user", user).field("command", command).time(timestamp)
+        point = Point("command_usage") \
+            .tag("user", user) \
+            .field("command", command) \
+            .field("arguments", args_log) \
+            .time(timestamp)
 
         write_api.write(bucket=INFLUXDB_BUCKET, org=INFLUXDB_ORG, record=point)
     except Exception as e:
         print("Failed to write to influx")
+
 
 @bot.event
 async def on_ready():
